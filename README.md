@@ -1,3 +1,5 @@
+<img src="desk/web/shelf-icon.svg" width="96" height="96" alt="Shelf logo">
+
 # %shelf
 
 A public web page that lists the apps your Urbit ship publishes, so anyone can
@@ -7,29 +9,29 @@ The page shows your ship's `%treaty` alliance: your own published desks plus
 any desks you republish from other ships. Each app has an Install button that
 opens it in the visitor's own Landscape, and the Dojo `|install` command as a
 fallback. The page follows the visitor's light or dark preference. It has no
-JavaScript except for the Copy buttons.
+JavaScript except for the Copy buttons. The same URL also returns the list as
+JSON.
 
 %shelf answers on exactly one path, `/shelf`. Run it behind a reverse proxy
 that serves it at the root of a dedicated domain (see
-[Serving it on its own domain](#serving-it-on-its-own-domain)). All of the
-page's links point at `/`.
+[Serving it on its own domain](#serving-it-on-its-own-domain)). The page's
+links and its install form all point at `/`.
 
 ## Requirements
 
 - Kernel `[%zuse 408]`.
-- `%landscape`, which provides `%treaty`. Fresh ships have it.
+- `%landscape`, which provides `%treaty` and `%docket`. Fresh ships have it.
+- Nix, for the one-command build. Without it, copy `desk/` from a checkout.
 
 ## Install
-
-Build the desk with Nix. `result` is then the desk folder:
 
 ```sh
 nix build github:iko-soy/shelf
 ```
 
-From a checkout, `nix build` does the same, or you can use `desk/` directly.
-
-Then, with your ship running:
+`result` is now the desk folder (see [Building with Nix](#building-with-nix)).
+Without Nix, use `desk/` from a checkout in its place. Then, with your ship
+running:
 
 ```
 ~sampel-palnet:dojo> |new-desk %shelf
@@ -50,6 +52,44 @@ The page is now at `https://<your-ship>/shelf`, and Landscape shows a Shelf
 tile that opens it. It is meant to be opened through your own domain, though:
 on the ship's address the page renders, but its links lead to `/`, which
 belongs to Landscape.
+
+## Building with Nix
+
+`flake.nix` has one output: `packages.<system>.default`, the desk. Building it
+copies `desk/` into the Nix store; nothing is compiled, because Clay compiles
+the Hoon on your ship when you commit the desk.
+
+| Command | Builds |
+|---|---|
+| `nix build github:iko-soy/shelf` | the latest commit on the default branch |
+| `nix build github:iko-soy/shelf/<commit>` | a specific commit |
+| `nix build` | your checkout, from the repo root |
+
+Each one leaves a `result` symlink to the desk in the store:
+
+```
+result/
+├── desk.bill  desk.docket-0  sys.kelvin
+├── app/  gen/  lib/  mar/  sur/  tests/
+└── web/
+```
+
+- Files in the store are read-only, so `chmod -R u+w` the mount after copying
+  them in: the ship has to be able to write to its own mount.
+- `nix flake check --all-systems` checks the flake on every system it
+  supports: `x86_64-linux`, `aarch64-linux` and `aarch64-darwin`. Plain
+  `nix flake check` checks only your own. Current nixpkgs no longer supports
+  Intel Macs.
+- nixpkgs is only used for `runCommandLocal`. `nix flake update` moves its
+  pin in `flake.lock`.
+- From another flake, for example a NixOS config that sets up a ship, the desk
+  is:
+
+  ```nix
+  inputs.shelf.url = "github:iko-soy/shelf";
+  # …
+  shelf.packages.${system}.default
+  ```
 
 ## Update
 
@@ -76,7 +116,9 @@ before you can publish it.
   `:treaty|unally ~other-ship`.
 
 %shelf has a docket of its own, so `:treaty|publish %shelf` lists it on its
-own page, where others can install it.
+own page, where others can install it. The docket carries the app icon
+inline, as a URL-encoded `data:` URL, so the icon shows in Landscape and on
+other ships' pages with nothing to host.
 
 A republished app appears once your ship has received its docket from the
 publisher, which happens a few seconds after you ally them. Apps are sorted by
@@ -103,7 +145,7 @@ apps.example.com {
 - `redir` sends every path except `/` back to `/`, so nothing else on your
   ship can be reached through this domain.
 - `rewrite` replaces only the path, so the query string the page relies on
-  (`/?install=…`) reaches the ship intact.
+  (`/?install=…`, `/?asset=…`) reaches the ship intact.
 - `Forwarded` tells Eyre the visitor came over HTTPS. Eyre trusts it only
   from `127.0.0.1`, hence the IP instead of `localhost`. Without it, a ship
   that also serves its own TLS redirects every proxied request to its HTTPS
@@ -113,6 +155,10 @@ apps.example.com {
   another proxy, pass `Host` through (nginx: `proxy_set_header Host $host;`)
   and send `Forwarded` (or `X-Forwarded-Proto`) the same way.
 - Your ship's own domain is unaffected: `/` still goes to Landscape.
+- %shelf serves everything the page needs from the desk, at the same URL: the
+  CSS and JavaScript inline, and the favicon at `/?asset=favicon.svg`. It
+  also serves the app icon at `/?asset=shelf-icon.svg`, though the docket
+  carries that inline. Nothing else needs to be reachable.
 
 This config was tested with Caddy 2.11 in front of a fake ship.
 
@@ -155,12 +201,15 @@ curl -H 'Accept: application/json' https://apps.example.com/
 - `image` is `null` when the docket has none, and `website` is `""`.
 - `image` and `website` are the docket's values as they are. Dockets can come
   from other ships, and unlike the page, the JSON doesn't filter these, so
-  check for `http(s)` before using them.
+  check them before using them. `image` may also be an inline
+  `data:image/…` URL.
+- Text that isn't valid UTF-8 comes out with U+FFFD in its place, so the
+  listing is always valid JSON.
 - Entries are sorted like the page. Key order within an object is not fixed.
 - JSON wins when the header ranks `application/json` above `text/html`. When
   the two rank equally, the more specific match wins, so
   `application/json, */*` gets JSON. A full tie, a bare `*/*` or a missing
-  header gets HTML.
+  header gets HTML. Repeated `Accept` lines count as one list.
 - The response has `Access-Control-Allow-Origin: *`, varies on `Accept` and
   `Origin`, and is `private, max-age=60`. It is private because Eyre attaches
   its session cookie to every response, and on your own logged-in requests
@@ -172,10 +221,10 @@ curl -H 'Accept: application/json' https://apps.example.com/
    URL (for example `sampel-palnet.tlon.network`) and shows the Dojo command.
 2. The form is POSTed. %shelf checks the URL and keeps only its scheme, host
    and port. It remembers that origin in a cookie for a year, then redirects
-   to
-   `<ship>/apps/landscape/search/direct/apps/~publisher/desk`. That is
+   to `<ship>/apps/landscape/search/direct/apps/~publisher/desk`. That is
    Landscape's own "Get App" dialog. The visitor's ship fetches the app's
-   details directly from the publisher.
+   details directly from the publisher, and a visitor who isn't logged in
+   lands there after their ship's login page.
 3. On later visits, Install links straight there. The button reads
    `Install on ~sampel-palnet` when the URL's first label is a planet name
    (or a moon or comet), or any ship name on `arvo.network`, `tlon.network`
@@ -191,8 +240,9 @@ Guards:
   docket image URL pointing at your domain, can plant a URL in a visitor's
   cookie or bounce them elsewhere through your domain.
 - Only apps actually on the shelf can be installed through the form.
-- On the page, image and website URLs from dockets are used only if they are
-  `http(s)`. Dockets can come from other ships.
+- On the page, docket images are used only if they are `http(s)` or
+  `data:image/…` URLs, and website links only if they are `http(s)`.
+  Dockets can come from other ships.
 
 ## Traffic
 
@@ -235,22 +285,115 @@ after %shelf stops. Until you remove it, `/shelf` answers 503 at once.
    Installing %shelf again binds `/shelf` again. %shelf re-binds every time
    it loads, so it also restores the binding if someone removed it by hand.
 
+## Changes from the design handoffs
+
+%shelf follows two design handoffs: the page itself (layout, copy, behaviour,
+JSON, a skeleton agent) and a later icon update. Rendered with the mock's sample
+data, the page matches the design mock pixel for pixel in light and dark mode,
+apart from the icons and names. Everything below differs from the handoffs,
+and why.
+
+**Serving**
+- **One path, `/shelf`, instead of `/`.** On most ships Landscape's `%docket`
+  owns `/`, and Eyre doesn't refuse a second claim: it silently hands `/`
+  over, which would take away the owner's login page. A dedicated domain
+  mapped onto `/shelf` gives visitors a clean root URL instead.
+- **One URL for everything.** Because only `/` reaches the ship through that
+  domain, the CSS and JavaScript are inlined (not `/shelf.css`, `/copy.js`),
+  the icons are at `/?asset=…` (not `/favicon.svg`, `/shelf-icon.svg`), the
+  install form posts to `/` (not `/install`), and Change ship is `/?forget`
+  (not `/forget`). Other paths are the proxy's job; the ship answers them
+  with 404.
+- **JSON by `Accept` header at the same URL, not `/apps.json`, and
+  `private`.** The single URL rules out `/apps.json`, and `public` caching
+  could hand an owner's login cookie to a shared cache.
+- **HTML varies on `Cookie` as well as `Accept`.** Otherwise a browser shows
+  its cached copy for up to a minute after Change ship or a save.
+- **Bodies go out in 16 KiB pieces**, because a single large response gets
+  quadratically slower on its way out of the ship.
+
+**Installing**
+- **The install form is a POST, accepted only from the page itself, and only
+  for apps on the shelf.** A GET could be triggered by a link or by another
+  publisher's docket image, planting a phishing URL in visitors' cookies.
+- **Deep link:** `<ship>/apps/landscape/search/direct/apps/~pub/desk`,
+  Landscape's own "show install" route, tested end to end. The handoff's
+  `…/leap/search/…` also works, but only through a redirect.
+- **Saved ship URLs keep only scheme, host and port**, so a pasted
+  `…/apps/groups` doesn't break the deep link. `localhost` and `127.*`
+  default to `http://`, and ports must be 1–65535.
+- **The cookie holds the URL as is (not URL-encoded), `HttpOnly`, and gets
+  `Secure` when the visitor came over HTTPS**, as `Forwarded` or
+  `X-Forwarded-Proto` says behind a proxy. The normalized URL only contains
+  cookie-safe characters.
+- **"Install on ~ship" needs a planet or longer name, or a known ship host.**
+  The handoff's rule (any first DNS label that parses as an `@p`) turned
+  `dev.example.com` into "Install on ~dev".
+- **Returning visitors see "Installs open on ~ship. Change ship"** in the
+  masthead, a muted link that clears the cookie. The handoff left this open.
+
+**Reading the alliance**
+- **Own desks' treaties are built from Clay**, from each desk's
+  `desk.docket-0`, as `%treaty` does. `%treaty`'s `/treaty/<ship>/<desk>`
+  scry only covers other ships' desks and crashes for your own.
+- **Only scries that can't fail.** The handoff wrapped scries in `mule`, but
+  inside an agent `mule` can't catch a failed scry: the request just fails.
+- **Visitors arrive under an Eyre guest identity**, so the owner check
+  applies only to the settings pokes. Checking every request would 500 for
+  all visitors.
+- **Docket text from other ships is handled defensively:** images only
+  `http(s)` or `data:image/…`, links only `http(s)`, invalid UTF-8 replaced
+  in the JSON, and a title that starts with a control character still
+  renders.
+
+**Page**
+- **Header and rows share one grid (CSS subgrid)**, so columns stay aligned
+  when Install labels get wider for a saved ship.
+- **Narrow screens:** with a saved ship the stacked layout starts at 1040px
+  instead of 860px, and the install button's text wraps; the URL field gets
+  its own line; long words wrap instead of overflowing.
+- **Keyboard focus inside a row tints it**, as the handoff's interaction table
+  says (its CSS only did this on hover).
+- **"1 app"**, not "1 apps".
+- **The sigil is drawn in Hoon** by a vendored renderer, in `currentColor` on
+  `var(--ink)` so it inverts with the theme, at sigil-js's 56px geometry.
+  Moons and comets get the plain square, as in Landscape.
+- **New: owner-set raw HTML in `<head>` and `<body>`**, for analytics.
+
+**Icons and docket** (the icon update)
+- **The docket's `image` is the icon inline, as a URL-encoded `data:` URL**,
+  instead of an absolute URL on the ship, which would need filling in per
+  ship and would break wherever that ship can't be reached.
+- **The tile opens `/shelf`** (`site+/shelf`, not `site+/`), and the docket's
+  website is this repo.
+- **The docket's description drops "with one-click install"**: first-time
+  visitors enter their ship's URL before the Install button takes them there.
+- **`mar/svg` is the upstream mark from `%base`**, not the handoff's new one.
+- **Icons are served `private`** for the same login-cookie reason as the
+  JSON.
+
+**Other**
+- **Kernel `[%zuse 408]`**, the current release, replacing the handoff's
+  placeholder 409.
+
 ## Development
 
 The desk is self-contained. `desk/` holds everything Clay needs:
 
 | Path | What |
 |---|---|
-| `desk.docket-0` | What Landscape shows: title, description, color, version, website, license |
+| `desk.docket-0` | What Landscape shows: title, description, color, icon, version, website, license. Its `image` is `web/shelf-icon.svg` URL-encoded; a test checks they match |
 | `app/shelf.hoon` | The agent: Eyre binding, routing, scries, responses |
 | `lib/shelf.hoon` | Pure helpers and the page (Sail) |
 | `sur/shelf.hoon`, `mar/shelf/action.hoon`, `gen/shelf/` | The `head`/`body` settings |
 | `web/shelf.css`, `web/copy.js` | Inlined into the page at build time with `/*` |
+| `web/shelf-icon.svg`, `web/favicon.svg` | The app icon (also inlined in the docket) and the favicon, served at `?asset=` |
 | `tests/lib/shelf.hoon` | Unit tests, including the rendered page |
 | `lib/sigil.hoon`, `lib/sigil/symbols.hoon` | Vendored [sigil renderer](https://github.com/Fang-/suite) (MIT, ~paldev; shapes from `@urbit/sigil-js`, MIT, Tlon) |
-| other `lib/`, `mar/`, `sur/` files | Copied unmodified from `%base` (urbit/urbit `5a187fe`) and `%landscape` (`sur/treaty`, `sur/docket`, `lib/docket`, `mar/docket-0`; tloncorp/landscape `46c6ed8`) |
+| other `lib/`, `mar/`, `sur/` files | Copied unmodified from `%base` (urbit/urbit `5a187fe`, including `mar/svg`) and `%landscape` (`sur/treaty`, `sur/docket`, `lib/docket`, `mar/docket-0`; tloncorp/landscape `46c6ed8`) |
 
-`flake.nix` makes `nix build` produce the desk as `result`.
+Outside the desk, `flake.nix` and `flake.lock` define the Nix build (see
+[Building with Nix](#building-with-nix)).
 
 Run the tests on a ship with the desk installed:
 

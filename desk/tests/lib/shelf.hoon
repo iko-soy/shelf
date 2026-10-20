@@ -1,5 +1,7 @@
 /-  docket, treaty
 /+  *test, *shelf
+/*  icon  %svg       /web/shelf-icon/svg
+/*  dok   %docket-0  /desk/docket-0
 |%
 ::  fixtures for the page tests
 ::
@@ -15,6 +17,13 @@
   :*  ~bus  %marginalia  da+~2026.1.1  0v2
       %1  'Marginalia'  'Annotate any page.'  0x3d.3934  [%site /apps/marginalia]
       ~  [0 4 2]  'https://github.com/bus/marginalia'  'MIT'
+  ==
+::
+++  shelfapp
+  ^-  treaty:treaty
+  :*  ~zod  %shelf  da+~2026.1.1  0v4
+      %1  'Shelf'  'Its own icon.'  0xe8.801f  [%site /shelf]
+      `'data:image/svg+xml,%3Csvg%3E'  [0 1 0]  'https://github.com/iko-soy/shelf'  'MIT'
   ==
 ::
 ++  oddity
@@ -52,7 +61,8 @@
     (expect !>((has doc "<title>~zod · Apps</title>")))
     (expect !>((has doc "<style>CSS</style>")))
     (expect !>((has doc "<main class=\"page\">")))
-    (expect !>((has doc "<link rel=\"icon\" href=\"data:,\" />")))
+    %-  expect  !>
+    (has doc "<link rel=\"icon\" type=\"image/svg+xml\" href=\"?asset=favicon.svg\" />")
     (expect !>((has doc "<script>JS</script>")))
   ==
 ::
@@ -79,6 +89,10 @@
     (expect !>(!(has doc "panel-wrap")))
     (expect !>((has doc "New to Urbit?\0a<a href=\"https://urbit.org\"")))
   ==
+::
+++  test-ui-inline-icon
+  =/  doc  (render ~zod ~[shelfapp] ~ | ~)
+  (expect !>((has doc "<img src=\"data:image/svg+xml,%3Csvg%3E\" alt=\"\" loading=\"lazy\" />")))
 ::
 ++  test-ui-one-app
   =/  doc  (render ~zod ~[harbor] ~ | ~)
@@ -193,6 +207,13 @@
     (expect-eq !>('') !>((clean-utf8 '')))
   ==
 ::
+::  the docket's inline icon is web/shelf-icon.svg, URL-encoded
+::
+++  test-docket-icon
+  %+  expect-eq
+    !>(`(unit @t)``(crip (weld "data:image/svg+xml," (en-urlt:html (trip icon)))))
+  !>(image.docket.dok)
+::
 ++  test-treaty-json
   =/  one  (en:json:html (treaty-json harbor))
   =/  two  (en:json:html (treaty-json marginalia))
@@ -282,6 +303,14 @@
     (expect-eq !>(`(unit @t)`~) !>((web-url '//evil.com/x')))
     (expect-eq !>(`(unit @t)`~) !>((web-url 'data:image/png;base64,AAAA')))
     (expect-eq !>(`(unit @t)`~) !>((web-url '')))
+    (expect-eq !>(`(unit @t)``'data:image/png;base64,AAAA') !>((image-url 'data:image/png;base64,AAAA')))
+    (expect-eq !>(`(unit @t)``'https://a.b/i.png') !>((image-url 'https://a.b/i.png')))
+    %+  expect-eq  !>(`(unit @t)``'data:image/svg+xml,%3Csvg%3E')
+    !>((image-url 'data:image/svg+xml,%3Csvg%3E'))
+  ::
+    (expect-eq !>(`(unit @t)``'DATA:Image/png;base64,AA') !>((image-url 'DATA:Image/png;base64,AA')))
+    (expect-eq !>(`(unit @t)`~) !>((image-url 'data:text/html,%3Cscript%3E')))
+    (expect-eq !>(`(unit @t)`~) !>((image-url 'javascript:alert(1)')))
   ==
 ::
 ++  test-header

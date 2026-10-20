@@ -7,6 +7,9 @@
 ::    Meant to sit behind a reverse proxy that maps a dedicated domain's
 ::    / onto /shelf, so the page's links all point at /.
 ::
+::    It also serves its two icons from the desk, at ?asset=favicon.svg
+::    and ?asset=shelf-icon.svg.
+::
 ::    The owner can append raw HTML to <head> and <body>, for analytics:
 ::      :shelf|head '<script defer src="…"></script>'
 ::      :shelf|body '…'
@@ -15,6 +18,8 @@
 /+  default-agent, dbug, server, *shelf
 /*  shelf-css  %css  /web/shelf/css
 /*  copy-js    %js   /web/copy/js
+/*  favicon     %svg  /web/favicon/svg
+/*  shelf-icon  %svg  /web/shelf-icon/svg
 |%
 +$  card  card:agent:gall
 +$  state-0
@@ -112,6 +117,7 @@
   ?.  ?=(?(%'GET' %'HEAD') method.request.req)
     [[405 ~[['allow' 'GET, HEAD, POST']]] ~]
   =/  q=(map @t @t)  (malt args.rl)
+  ?^  name=(~(get by q) 'asset')  (asset u.name)
   ?:  (~(has by q) 'forget')  (forget hs secure)
   ?:  (wants-json (header-all 'accept' hs))  listing-json
   (page q hs)
@@ -126,6 +132,27 @@
   |=  [code=@ud loc=@t]
   ^-  simple-payload:http
   [[code ~[['location' loc] ['cache-control' 'no-store']]] ~]
+::
+::  +asset: one of the icons in the desk's /web
+::
+::    private, like the JSON: Eyre adds its session cookie to every
+::    response, and for a logged-in owner that is their login token.
+::
+++  asset
+  |=  name=@t
+  ^-  simple-payload:http
+  =/  file=(unit @)
+    ?+  name  ~
+      %'favicon.svg'     `favicon
+      %'shelf-icon.svg'  `shelf-icon
+    ==
+  ?~  file  (plain 404 'Not found')
+  :_  `(as-octs:mimes:html u.file)
+  :-  200
+  :~  ['content-type' 'image/svg+xml']
+      ['cache-control' 'private, max-age=86400']
+      ['x-content-type-options' 'nosniff']
+  ==
 ::
 ::  +forget: clear the visitor's saved ship
 ::

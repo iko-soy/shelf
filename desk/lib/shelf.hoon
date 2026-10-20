@@ -230,6 +230,18 @@
   ?.  |(=("https://" t) =("http://" (scag 7 t)))  ~
   `url
 ::
+::  +image-url: a URL fit for an <img src>: http(s), or an inline image
+::
+::    A docket may carry its icon as a data:image/ URL, so it shows
+::    without a server. An <img> can't run script, whatever it loads.
+::
+++  image-url
+  |=  url=@t
+  ^-  (unit @t)
+  ?^  (web-url url)  `url
+  ?.  =("data:image/" (cass (trip (end [3 11] url))))  ~
+  `url
+::
 ::  +header: a request header, matching its name case-insensitively
 ::
 ++  header
@@ -539,10 +551,11 @@
       :~  ;meta(charset "utf-8");
           ;meta(name "viewport", content "width=device-width, initial-scale=1");
           ;meta(name "color-scheme", content "light dark");
-        ::  no favicon, so browsers don't ask the proxy for /favicon.ico,
-        ::  which it would answer with a second render of this page
+        ::  query-relative, so it resolves on the proxy's / and the
+        ::  ship's /shelf alike; an explicit icon also stops browsers
+        ::  asking the proxy for /favicon.ico, a second page render
         ::
-        ;link(rel "icon", href "data:,");
+        ;link(rel "icon", type "image/svg+xml", href "?asset=favicon.svg");
           ;title: {me} · Apps
           ;style: {(trip css)}
       ==
@@ -613,7 +626,7 @@
     =/  pub=tape  (scow %p ship.t)
     =/  cmd=tape  (install-cmd ship.t desk.t)
     =/  is-open=?  =(open `[ship.t desk.t])
-    =/  img=(unit @t)  (biff image.d web-url)
+    =/  img=(unit @t)  (biff image.d image-url)
     =/  site=(unit @t)  ?:(=('' website.d) ~ (web-url website.d))
     ;article.app(id (anchor ship.t desk.t))
       ;div.app-row
