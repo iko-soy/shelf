@@ -355,6 +355,7 @@ and why.
 - **Keyboard focus inside a row tints it**, as the handoff's interaction table
   says (its CSS only did this on hover).
 - **"1 app"**, not "1 apps".
+- **Republished apps say "from ~publisher"**, not "by ~publisher".
 - **The sigil is drawn in Hoon** by a vendored renderer, in `currentColor` on
   `var(--ink)` so it inverts with the theme, at sigil-js's 56px geometry.
   Moons and comets get the plain square, as in Landscape.

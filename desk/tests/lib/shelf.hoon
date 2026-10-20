@@ -70,7 +70,7 @@
   =/  doc  (render ~zod ~[harbor marginalia oddity] ~ | ~)
   ;:  weld
     (expect !>((has doc "<span class=\"count\">3 apps</span>")))
-    (expect !>(=(1 (count doc "by ~bus"))))
+    (expect !>(=(1 (count doc "from ~bus"))))
     (expect !>((has doc "<section class=\"apps\" aria-label=\"Published apps\">")))
     (expect !>((has doc "&lt;Odd &amp; &quot;Quoted&quot;&gt; App")))
     (expect !>((has doc "a &lt; b &amp; c &gt; &#39;d&#39;")))

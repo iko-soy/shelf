@@ -638,7 +638,7 @@
         ;div.app-name
           ;strong: {(trip title.d)}
           ;*  ?:  =(ship.t our)  ~
-              :~  ;span.app-by: by {pub}
+              :~  ;span.app-by: from {pub}
               ==
         ==
         ;div.app-desc
