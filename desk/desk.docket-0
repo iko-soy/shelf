@@ -1,0 +1,8 @@
+:~  title+'Shelf'
+    info+'A public page listing the apps this ship publishes, so anyone can install them on their own ship.'
+    color+0xe8.801f
+    site+/shelf
+    version+[0 1 0]
+    website+'https://github.com/iko-soy/shelf'
+    license+'MIT'
+==

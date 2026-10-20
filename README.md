@@ -21,7 +21,15 @@ page's links point at `/`.
 
 ## Install
 
-From the repo root, with your ship running:
+Build the desk with Nix. `result` is then the desk folder:
+
+```sh
+nix build github:iko-soy/shelf
+```
+
+From a checkout, `nix build` does the same, or you can use `desk/` directly.
+
+Then, with your ship running:
 
 ```
 ~sampel-palnet:dojo> |new-desk %shelf
@@ -29,7 +37,8 @@ From the repo root, with your ship running:
 ```
 
 ```sh
-cp -R desk/* /path/to/pier/shelf/
+cp -R result/* /path/to/pier/shelf/
+chmod -R u+w /path/to/pier/shelf    # files from the Nix store are read-only
 ```
 
 ```
@@ -37,15 +46,16 @@ cp -R desk/* /path/to/pier/shelf/
 ~sampel-palnet:dojo> |install our %shelf
 ```
 
-The page is now at `https://<your-ship>/shelf`. It is meant to be opened
-through your own domain, though: on the ship's address the page renders, but
-its links lead to `/`, which belongs to Landscape.
+The page is now at `https://<your-ship>/shelf`, and Landscape shows a Shelf
+tile that opens it. It is meant to be opened through your own domain, though:
+on the ship's address the page renders, but its links lead to `/`, which
+belongs to Landscape.
 
 ## Update
 
-Copy `desk/*` into the mount again and run `|commit %shelf`. Then check that
-`.^(cass:clay %cw /=shelf=)` moved: if the new version doesn't build, Clay
-keeps the old one and logs nothing.
+Build and copy the desk into the mount again, as above, and run
+`|commit %shelf`. Then check that `.^(cass:clay %cw /=shelf=)` moved: if the
+new version doesn't build, Clay keeps the old one and logs nothing.
 
 %shelf is installed from your own ship, so it gets no over-the-air updates.
 After a kernel upgrade, Clay holds it until `desk/sys.kelvin` lists the new
@@ -64,6 +74,9 @@ before you can publish it.
   `:treaty|add-desk ~other-ship %app`. Remove it with
   `:treaty|remove-desk ~other-ship %app`, and stop following with
   `:treaty|unally ~other-ship`.
+
+%shelf has a docket of its own, so `:treaty|publish %shelf` lists it on its
+own page, where others can install it.
 
 A republished app appears once your ship has received its docket from the
 publisher, which happens a few seconds after you ally them. Apps are sorted by
@@ -206,8 +219,10 @@ after %shelf stops. Until you remove it, `/shelf` answers 503 at once.
 1. Remove the site from your reverse proxy first. Otherwise visitors get that
    503 page, or, once the binding is gone, an endless redirect loop between
    Landscape's login page and `/`.
-2. `|uninstall %shelf`. Your `head`/`body` HTML is kept, and installing again
-   brings the page straight back.
+2. `:docket|uninstall %shelf`, or Uninstall from the tile's menu in
+   Landscape. This removes the tile and suspends the agent; a plain
+   `|uninstall %shelf` would leave a suspended tile behind. Your `head`/`body`
+   HTML is kept, and `|install our %shelf` brings the page straight back.
 3. To delete that state too: `|nuke %shelf, =desk &` (answer `y`).
 4. Optionally, free the path. Only the binding's owner can remove it, so take
    it over from the dojo, then remove it:
@@ -226,13 +241,16 @@ The desk is self-contained. `desk/` holds everything Clay needs:
 
 | Path | What |
 |---|---|
+| `desk.docket-0` | What Landscape shows: title, description, color, version, website, license |
 | `app/shelf.hoon` | The agent: Eyre binding, routing, scries, responses |
 | `lib/shelf.hoon` | Pure helpers and the page (Sail) |
 | `sur/shelf.hoon`, `mar/shelf/action.hoon`, `gen/shelf/` | The `head`/`body` settings |
 | `web/shelf.css`, `web/copy.js` | Inlined into the page at build time with `/*` |
 | `tests/lib/shelf.hoon` | Unit tests, including the rendered page |
 | `lib/sigil.hoon`, `lib/sigil/symbols.hoon` | Vendored [sigil renderer](https://github.com/Fang-/suite) (MIT, ~paldev; shapes from `@urbit/sigil-js`, MIT, Tlon) |
-| other `lib/`, `mar/`, `sur/` files | Copied unmodified from `%base` (urbit/urbit `5a187fe`) and `%landscape` (`sur/treaty`, `sur/docket`; tloncorp/landscape `46c6ed8`) |
+| other `lib/`, `mar/`, `sur/` files | Copied unmodified from `%base` (urbit/urbit `5a187fe`) and `%landscape` (`sur/treaty`, `sur/docket`, `lib/docket`, `mar/docket-0`; tloncorp/landscape `46c6ed8`) |
+
+`flake.nix` makes `nix build` produce the desk as `result`.
 
 Run the tests on a ship with the desk installed:
 
@@ -254,3 +272,10 @@ Some details that are easy to get wrong:
 - **Clay can refuse a commit silently.** It refuses commits that would stop a
   running agent from building, and logs nothing. After `|commit`, check that
   `.^(cass:clay %cw /=shelf=)` moved.
+
+## License
+
+MIT; see [LICENSE](LICENSE). The vendored files keep their own notices:
+`lib/sigil.hoon` and `lib/sigil/symbols.hoon` are MIT (Fang; shapes from
+`@urbit/sigil-js`, Tlon), and the files from `%base` and `%landscape` come
+from urbit/urbit (MIT) and tloncorp/landscape.
