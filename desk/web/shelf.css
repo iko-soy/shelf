@@ -1,0 +1,143 @@
+/* %shelf — public app listing. Matches design/Urbit Apps.dc.html. */
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --field: #f0efeb;
+  --ink: #151514;
+  --muted: #67665f;
+  --line: #e3e2dd;
+  --accent: #e8801f;
+  --accent-hover: #f29233;
+  --on-accent: #151514;
+  --cols: 168px minmax(104px, 1fr) minmax(0, 2.6fr) 64px 84px minmax(96px, max-content);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121211;
+    --surface: #1b1b1a;
+    --field: #222220;
+    --ink: #efeee9;
+    --muted: #9d9c95;
+    --line: #2c2c2a;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 "Helvetica Neue", Helvetica, "Nimbus Sans", "Liberation Sans", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font: inherit; overflow-wrap: anywhere; }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 56px) 120px; }
+
+/* Masthead */
+.masthead { display: flex; align-items: center; gap: 20px; min-width: 0; padding: 44px 0 48px; }
+.masthead > div:last-child { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sigil { flex: none; width: 56px; height: 56px; overflow: hidden; background: var(--ink); color: var(--bg); }
+.sigil svg { display: block; width: 100%; height: 100%; }
+.masthead h1 { margin: 0; font-size: 28px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; }
+.masthead p { margin: 0; color: var(--muted); text-wrap: pretty; }
+.masthead p a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.masthead p a.change { color: var(--muted); }
+.masthead p a:hover { color: var(--accent); }
+
+/* Table */
+/* One grid for the whole table: the head and every row are subgrids, so the
+   max-content Install column fits the widest button in any row. Without
+   subgrid support, each row falls back to its own grid. */
+.apps { display: grid; grid-template-columns: var(--cols); column-gap: 24px; }
+.apps > * { grid-column: 1 / -1; }
+.app { display: grid; grid-template-columns: subgrid; }
+.apps-head, .app-row { display: grid; grid-column: 1 / -1; grid-template-columns: var(--cols); grid-template-columns: subgrid; column-gap: 24px; }
+.panel-wrap { grid-column: 1 / -1; }
+.apps-head { align-items: end; padding: 0 0 10px; border-bottom: 1px solid var(--ink); font-weight: 500; color: var(--muted); }
+.apps-head .count { text-align: right; }
+.app { border-bottom: 1px solid var(--line); scroll-margin-top: 24px; }
+.app-row { align-items: center; transition: background-color .15s; }
+.app-row:hover, .app-row:focus-within { background: var(--field); }
+
+.tile { align-self: stretch; min-height: 112px; display: flex; align-items: center; justify-content: center; background: var(--tile); color: var(--tile-ink); }
+.tile img { display: block; width: 64px; height: 64px; object-fit: cover; }
+.tile .initial { font-weight: 600; }
+
+.app-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.app-name strong { font-weight: 600; }
+.app-by { color: var(--muted); }
+
+.app-desc { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 20px 0; }
+.app-info { color: var(--muted); text-wrap: pretty; overflow-wrap: anywhere; }
+.cmd { display: flex; flex-wrap: wrap; gap: 2px 16px; opacity: 0; transition: opacity .15s; }
+.app-row:hover .cmd, .app-row:focus-within .cmd { opacity: 1; }
+@media (hover: none) { .cmd { opacity: 1; } }
+
+.version { font-variant-numeric: tabular-nums; }
+.install-cell { display: flex; justify-content: flex-end; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 18px; border: 0; border-radius: 0; background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.btn:hover { background: var(--accent-hover); color: var(--on-accent); }
+.btn-outline { background: none; border: 1px solid var(--ink); color: var(--ink); }
+.btn-outline:hover { background: none; color: var(--ink); }
+.btn-lg { flex: none; height: 40px; padding: 0 16px; }
+.copy { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* Install panel */
+.panel-wrap { display: grid; grid-template-columns: 168px minmax(0, 1fr); column-gap: 24px; }
+.tile-ext { background: var(--tile); }
+.panel { display: flex; flex-wrap: wrap; gap: 24px 48px; align-items: flex-start; margin: 0 0 24px; padding: 24px; background: var(--field); }
+.panel-col { flex: 1 1 380px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.panel-col.dojo-col { flex-basis: 300px; }
+.panel label, .panel .label { font-weight: 600; }
+.field-row { display: flex; gap: 8px; }
+.field-row input { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--ink); border-radius: 0; background: var(--surface); color: inherit; font: inherit; }
+.field-row input::placeholder { color: inherit; opacity: .45; }
+.hint { color: var(--muted); }
+.error { color: var(--ink); font-weight: 600; }
+.dojo { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); background: var(--surface); }
+.dojo .copy { flex: none; }
+
+/* Empty alliance */
+.empty { margin: 0; padding: 16px 0 0; border-top: 1px solid var(--ink); color: var(--muted); }
+
+/* Narrow screens — not part of the mock; suggested fallback. A saved ship
+   makes the Install buttons wider, so with one this layout starts earlier. */
+@media (max-width: 860px) {
+  .apps, .app { display: block; }
+  .apps-head { display: none; }
+  .app-row { grid-template-columns: 96px minmax(0, 1fr); column-gap: 16px; align-items: start; }
+  .app-row > :not(.tile) { grid-column: 2; }
+  .tile { grid-row: 1 / span 5; min-height: 96px; }
+  .tile img { width: 48px; height: 48px; }
+  .app-name { padding-top: 16px; }
+  .app-desc { padding: 4px 0 8px; }
+  .install-cell { justify-content: flex-start; padding: 8px 0 16px; }
+  .panel-wrap { grid-template-columns: 96px minmax(0, 1fr); column-gap: 16px; }
+  .field-row { flex-wrap: wrap; }
+  .field-row input { flex-basis: 100%; }
+  .install-cell .btn { height: auto; min-height: 36px; padding-block: 7px; white-space: normal; text-align: center; }
+}
+@media (max-width: 1040px) {
+  .saved .apps, .saved .app { display: block; }
+  .saved .apps-head { display: none; }
+  .saved .app-row { grid-template-columns: 96px minmax(0, 1fr); column-gap: 16px; align-items: start; }
+  .saved .app-row > :not(.tile) { grid-column: 2; }
+  .saved .tile { grid-row: 1 / span 5; min-height: 96px; }
+  .saved .tile img { width: 48px; height: 48px; }
+  .saved .app-name { padding-top: 16px; }
+  .saved .app-desc { padding: 4px 0 8px; }
+  .saved .install-cell { justify-content: flex-start; padding: 8px 0 16px; }
+  .saved .panel-wrap { grid-template-columns: 96px minmax(0, 1fr); column-gap: 16px; }
+  .saved .field-row { flex-wrap: wrap; }
+  .saved .field-row input { flex-basis: 100%; }
+  .saved .install-cell .btn { height: auto; min-height: 36px; padding-block: 7px; white-space: normal; text-align: center; }
+}
