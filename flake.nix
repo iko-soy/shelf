@@ -10,10 +10,15 @@
     in
     {
       # The desk: copy it into a mounted %shelf desk and |commit it.
-      packages = forAllSystems (pkgs: {
-        default = pkgs.runCommandLocal "shelf-desk" { } ''
-          cp -r ${./desk} $out
-        '';
-      });
+      packages = forAllSystems (pkgs:
+        let
+          desk = pkgs.runCommandLocal "shelf-desk" { } ''
+            cp -r ${./desk} $out
+          '';
+        in
+        {
+          inherit desk;
+          default = desk;
+        });
     };
 }

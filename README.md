@@ -55,9 +55,9 @@ belongs to Landscape.
 
 ## Building with Nix
 
-`flake.nix` has one output: `packages.<system>.default`, the desk. Building it
-copies `desk/` into the Nix store; nothing is compiled, because Clay compiles
-the Hoon on your ship when you commit the desk.
+`flake.nix` has one output: the desk, `packages.<system>.desk`, which is also
+the default package. Building it copies `desk/` into the Nix store; nothing is
+compiled, because Clay compiles the Hoon on your ship when you commit the desk.
 
 | Command | Builds |
 |---|---|
@@ -88,7 +88,7 @@ result/
   ```nix
   inputs.shelf.url = "github:iko-soy/shelf";
   # …
-  shelf.packages.${system}.default
+  shelf.packages.${system}.desk
   ```
 
 ## Update
