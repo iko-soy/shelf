@@ -21,9 +21,22 @@ links and its install form all point at `/`.
 
 - Kernel `[%zuse 408]`.
 - `%landscape`, which provides `%treaty` and `%docket`. Fresh ships have it.
-- Nix, for the one-command build. Without it, copy `desk/` from a checkout.
+- Nix, for the one-command build, if you install from source. Without it,
+  copy `desk/` from a checkout.
 
 ## Install
+
+Install %shelf from ~donmec-sallud, which publishes it:
+
+```
+~sampel-palnet:dojo> |install ~donmec-sallud %shelf
+```
+
+%shelf then gets its updates from ~donmec-sallud.
+[shelf.iko.soy](https://shelf.iko.soy) is %shelf running on that ship. It
+lists all the apps ~donmec-sallud offers, %shelf among them.
+
+To install from source instead, build the desk:
 
 ```sh
 nix build github:iko-soy/shelf
@@ -48,10 +61,10 @@ chmod -R u+w /path/to/pier/shelf    # files from the Nix store are read-only
 ~sampel-palnet:dojo> |install our %shelf
 ```
 
-The page is now at `https://<your-ship>/shelf`, and Landscape shows a Shelf
-tile that opens it. It is meant to be opened through your own domain, though:
-on the ship's address the page renders, but its links lead to `/`, which
-belongs to Landscape.
+Either way, once %shelf runs, the page is at `https://<your-ship>/shelf`, and
+Landscape shows a Shelf tile that opens it. It is meant to be opened through
+your own domain, though: on the ship's address the page renders, but its links
+lead to `/`, which belongs to Landscape.
 
 ## Building with Nix
 
@@ -93,11 +106,14 @@ result/
 
 ## Update
 
-Build and copy the desk into the mount again, as above, and run
-`|commit %shelf`. Then check that `.^(cass:clay %cw /=shelf=)` moved: if the
-new version doesn't build, Clay keeps the old one and logs nothing.
+A %shelf installed from ~donmec-sallud gets its updates from that ship.
 
-%shelf is installed from your own ship, so it gets no over-the-air updates.
+To update a source install, build and copy the desk into the mount again, as
+above, and run `|commit %shelf`. Then check that `.^(cass:clay %cw /=shelf=)`
+moved: if the new version doesn't build, Clay keeps the old one and logs
+nothing.
+
+A source install comes from your own ship, so it gets no over-the-air updates.
 After a kernel upgrade, Clay holds it until `desk/sys.kelvin` lists the new
 `%zuse` version; update that file (or pull a release that has) and commit.
 `+vats %shelf` shows whether it is running or held.
@@ -273,6 +289,9 @@ after %shelf stops. Until you remove it, `/shelf` answers 503 at once.
    Landscape. This removes the tile and suspends the agent; a plain
    `|uninstall %shelf` would leave a suspended tile behind. Your `head`/`body`
    HTML is kept, and `|install our %shelf` brings the page straight back.
+   Uninstalling a %shelf installed from ~donmec-sallud also stops its updates.
+   To turn them back on, run `|install ~donmec-sallud %shelf` after
+   `|install our %shelf`.
 3. To delete that state too: `|nuke %shelf, =desk &` (answer `y`).
 4. Optionally, free the path. Only the binding's owner can remove it, so take
    it over from the dojo, then remove it:
